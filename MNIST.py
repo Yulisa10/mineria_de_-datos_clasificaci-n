@@ -61,10 +61,22 @@ def main():
             color: #E74C3C;
             font-weight: bold;
         }
+        .best-model {
+            font-size: 20px;
+            font-weight: bold;
+            color: #27AE60;
+            text-align: center;
+            background-color: #D5F5E3;
+            padding: 10px;
+            border-radius: 10px;
+        }
         </style>
         """,
         unsafe_allow_html=True
     )
+
+    # Mejor modelo
+    st.markdown('<div class="best-model"> ✅ El mejor modelo encontrado es <span class="highlight">KNeighborsClassifier sin escalado</span>, con una accuracy de <span class="highlight">0.8717</span>. </div>', unsafe_allow_html=True)
 
     # Título y descripción
     st.markdown('<div class="main-title">Clasificación de Dígitos MNIST</div>', unsafe_allow_html=True)
@@ -76,15 +88,10 @@ def main():
     # Descripción de los hiperparámetros del modelo
     st.markdown("### Hiperparámetros del Modelo")
     st.write("""
-    Se evaluaron varios modelos para la clasificación de dígitos MNIST:
-    - **KNeighborsClassifier con StandardScaler**: AUC = 0.8233, Mejores hiperparámetros: {'n_neighbors': 4, 'p': 1}
-    - **DecisionTreeClassifier con StandardScaler**: AUC = 0.6844, Mejores hiperparámetros: {'max_depth': 8}
-    - **KNeighborsClassifier con MinMaxScaler**: AUC = 0.8712, Mejores hiperparámetros: {'n_neighbors': 4, 'p': 3}
-    - **DecisionTreeClassifier con MinMaxScaler**: AUC = 0.6917, Mejores hiperparámetros: {'max_depth': 9}
-    - **KNeighborsClassifier sin escalado**: AUC = 0.8717, Mejores hiperparámetros: {'n_neighbors': 4, 'p': 3}
-    - **DecisionTreeClassifier sin escalado**: AUC = 0.6755, Mejores hiperparámetros: {'max_depth': 10}
-
-    El mejor modelo encontrado es **KNeighborsClassifier sin escalado**, con una accuracy de **0.8717**.
+    El mejor modelo encontrado es un **KNeighborsClassifier** con los siguientes hiperparámetros:
+    - **n_neighbors**: 4 (número de vecinos a considerar).
+    - **p**: 3 (parámetro de distancia de Minkowski).
+    - **Escalador**: Ninguno (los datos se utilizaron sin normalización adicional).
     """)
 
     # Widget de subida de archivos
@@ -124,8 +131,9 @@ def main():
                 st.success(f"La imagen fue clasificada como: **{predicted_class}**")
 
     # Footer
-    st.markdown('<div class="footer">© 2025 - Clasificación de imágenes con Streamlit | Creado por Yulisa Ortiz Giraldo</div>', unsafe_allow_html=True)
+    st.markdown('<div class="footer">© 2025 - Clasificación de imágenes con Streamlit</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
+
 
