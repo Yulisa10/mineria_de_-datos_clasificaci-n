@@ -8,118 +8,72 @@ from tensorflow.keras.preprocessing.image import img_to_array
 import gzip
 import pickle
 
-# Crear un directorio para guardar las imágenes si no existe
+title_html = """
+    <style>
+        .main-title { font-size: 36px; font-weight: bold; color: #2E86C1; text-align: center; }
+        .description { font-size: 18px; color: #444; text-align: center; margin-bottom: 20px; }
+        .footer { font-size: 14px; color: #777; text-align: center; margin-top: 50px; }
+        .highlight { color: #E74C3C; font-weight: bold; }
+    </style>
+"""
+st.markdown(title_html, unsafe_allow_html=True)
+
+# Crear un directorio para guardar imágenes si no existe
 UPLOAD_FOLDER = "uploaded_images"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def save_image(uploaded_file):
-    """Guarda la imagen subida en el directorio UPLOAD_FOLDER."""
     file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
     return file_path
 
 def load_model():
-    """Cargar el modelo y sus pesos desde el archivo model_weights.pkl."""
     filename = 'model_trained_classifier.pkl.gz'
     with gzip.open(filename, 'rb') as f:
         model = pickle.load(f)
     return model
 
 def preprocess_image(image):
-    """Preprocesa la imagen para que sea compatible con el modelo."""
-    image = image.convert('L')  # Convertir a escala de grises
-    image = image.resize((28, 28))  # Redimensionar a 28x28
-    image_array = img_to_array(image) / 255.0  # Normalizar los píxeles
-    image_array = image_array.reshape(1, -1)  # Convertir a vector de 784 características
-    return image_array
+    image = image.convert('L').resize((28, 28))
+    image_array = img_to_array(image) / 255.0
+    return image_array.reshape(1, -1)
 
-def main():
-    # Estilos personalizados
-    st.markdown(
-        """
-        <style>
-        .main-title {
-            font-size: 32px;
-            font-weight: bold;
-            color: #2E86C1;
-            text-align: center;
-        }
-        .description {
-            font-size: 18px;
-            color: #555555;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .footer {
-            font-size: 14px;
-            color: #888888;
-            text-align: center;
-            margin-top: 50px;
-        }
-        .highlight {
-            color: #E74C3C;
-            font-weight: bold;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+st.markdown('<div class="main-title">Clasificación de Dígitos MNIST</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="description">Sube una imagen y la clasificaremos usando un <span class="highlight">KNeighborsClassifier</span> preentrenado.</div>',
+    unsafe_allow_html=True
+)
 
-    # Título y descripción
-    st.markdown('<div class="main-title">Clasificación de Dígitos MNIST</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="description">Sube una imagen de un dígito y la clasificaremos usando un <span class="highlight">KNeighborsClassifier</span> preentrenado.</div>',
-        unsafe_allow_html=True
-    )
+st.markdown("### Hiperparámetros del Modelo")
+st.write("""
+- **Modelo:** KNeighborsClassifier
+- **n_neighbors:** 4 (número de vecinos a considerar)
+- **p:** 3 (parámetro de distancia de Minkowski)
+- **Escalador:** Ninguno (sin normalización adicional)
+""")
 
-    # Descripción de los hiperparámetros del modelo
-    st.markdown("### Hiperparámetros del Modelo")
-    st.write("""
-    El mejor modelo encontrado es un **KNeighborsClassifier** con los siguientes hiperparámetros:
-    - **n_neighbors**: 4 (número de vecinos a considerar).
-    - **p**: 3 (parámetro de distancia de Minkowski).
-    - **Escalador**: Ninguno (los datos se utilizaron sin normalización adicional).
-    """)
+uploaded_file = st.file_uploader("Selecciona una imagen (PNG, JPG, JPEG):", type=["png", "jpg", "jpeg"])
+if uploaded_file:
+    st.subheader("Vista previa de la imagen subida")
+    image = Image.open(uploaded_file)
+    preprocessed_image = preprocess_image(image)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.image(image, caption="Imagen original", use_container_width=True)
+    with col2:
+        st.image(preprocessed_image.reshape(28, 28), caption="Imagen preprocesada", use_container_width=True)
+    
+    file_path = save_image(uploaded_file)
+    st.success(f"Imagen guardada en: `{file_path}`")
 
-    # Widget de subida de archivos
-    uploaded_file = st.file_uploader("Selecciona una imagen (PNG, JPG, JPEG):", type=["png", "jpg", "jpeg"])
+    mnist_classes = {i: str(i) for i in range(10)}
+    if st.button("Clasificar imagen"):
+        with st.spinner("Cargando modelo y clasificando..."):
+            model = load_model()
+            prediction = model.predict(preprocessed_image)
+            predicted_class = mnist_classes[prediction[0]]
+            st.success(f"La imagen fue clasificada como: **{predicted_class}**")
 
-    if uploaded_file is not None:
-        # Mostrar la imagen subida
-        st.subheader("Vista previa de la imagen subida")
-        image = Image.open(uploaded_file)
-
-        # Procesar la imagen
-        preprocessed_image = preprocess_image(image)
-
-        # Mostrar imágenes antes y después del preprocesamiento
-        st.subheader("Imágenes antes y después del preprocesamiento")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(image, caption="Imagen original", use_container_width=True, output_format="auto")
-        with col2:
-            st.image(preprocessed_image.reshape(28, 28), caption="Imagen preprocesada", use_container_width=True, output_format="auto")
-
-        # Guardar la imagen
-        file_path = save_image(uploaded_file)
-        st.success(f"Imagen guardada en: `{file_path}`")
-
-        # Diccionario de clases para MNIST
-        mnist_classes = {i: str(i) for i in range(10)}
-
-        # Botón para clasificar la imagen
-        if st.button("Clasificar imagen"):
-            with st.spinner("Cargando modelo y clasificando..."):
-                model = load_model()
-                prediction = model.predict(preprocessed_image)
-                predicted_class = mnist_classes[prediction[0]]
-                
-                # Mostrar el resultado de la clasificación
-                st.success(f"La imagen fue clasificada como: **{predicted_class}**")
-
-    # Footer
-    st.markdown('<div class="footer">© 2025 - Clasificación de imágenes con Streamlit</div>', unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()
+st.markdown('<div class="footer">Página creada por <b>Yulisa Ortiz Giraldo</b> | © 2025</div>', unsafe_allow_html=True)
